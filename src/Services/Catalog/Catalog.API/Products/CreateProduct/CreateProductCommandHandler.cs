@@ -1,5 +1,4 @@
 using BuildingBlocks.CQRS;
-using MediatR;
 using Catalog.API.Models;
 
 namespace Catalog.API.Products.CreateProduct;
@@ -8,7 +7,7 @@ public record CreateProductCommand(string Name, List<string> Category, string De
     : ICommand<CreateProductResult>;
 public record CreateProductResult(Guid Id);
 
-internal class CreateProductCommandHandler : ICommandHandler<CreateProductCommand, CreateProductResult>
+internal class CreateProductCommandHandler(IDocumentSession session) : ICommandHandler<CreateProductCommand, CreateProductResult>
 {
     public async Task<CreateProductResult> Handle(CreateProductCommand command, CancellationToken ct)
     {
@@ -24,7 +23,10 @@ internal class CreateProductCommandHandler : ICommandHandler<CreateProductComman
             ImageFile = command.ImageFile,
             Price = command.Price
         };
+        
+        session.Store(product);
+        await session.SaveChangesAsync(ct);
 
-        return new CreateProductResult(Guid.NewGuid());
+        return new CreateProductResult(product.Id);
     }
 }
